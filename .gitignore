@@ -1,0 +1,5 @@
+/tmp
+/homeswitch
+.env
+.env.*
+!.env.example
