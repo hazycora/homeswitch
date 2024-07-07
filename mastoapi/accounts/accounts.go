@@ -10,6 +10,8 @@ import (
 	"git.gay/h/homeswitch/db"
 	"git.gay/h/homeswitch/models"
 	"github.com/rs/zerolog/log"
+
+	"github.com/alexedwards/argon2id"
 )
 
 type RegisterAccountForm struct {
@@ -61,14 +63,23 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error generating key pair", http.StatusInternalServerError)
 		return
 	}
+
+	hash, err := argon2id.CreateHash(form.Password, argon2id.DefaultParams)
+	if err != nil {
+		log.Error().Err(err).Str("username", form.Username).Msg("Error hashing password")
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		return
+	}
+
 	actor := models.Actor{
-		ID:         id,
-		Username:   form.Username,
-		Name:       &form.Username,
-		Email:      form.Email,
-		Created:    time.Now().Unix(),
-		PrivateKey: privateKey,
-		PublicKey:  publicKey,
+		ID:           id,
+		Username:     form.Username,
+		Name:         &form.Username,
+		Email:        form.Email,
+		Created:      time.Now().Unix(),
+		PrivateKey:   string(privateKey),
+		PublicKey:    string(publicKey),
+		PasswordHash: hash,
 	}
 	_, err = db.Engine.Insert(&actor)
 	if err != nil {

@@ -2,9 +2,8 @@ package db
 
 import (
 	"crypto/rand"
-	"encoding/binary"
+	"encoding/hex"
 
-	"git.gay/h/homeswitch/models"
 	_ "github.com/mattn/go-sqlite3"
 	"xorm.io/xorm"
 )
@@ -17,19 +16,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	Sync()
 }
 
-func Sync() {
-	Engine.Sync(new(models.Actor))
-}
-
-func RandomId() (id uint64, err error) {
+func RandomId() (id string, err error) {
 	b := make([]byte, 16)
 	_, err = rand.Read(b)
 	if err != nil {
 		return
 	}
-	id = binary.BigEndian.Uint64(b)
+	id = hex.EncodeToString(b)
 	return
 }
