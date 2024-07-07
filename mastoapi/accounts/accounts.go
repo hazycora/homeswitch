@@ -8,24 +8,24 @@ import (
 
 	"git.gay/h/homeswitch/crypto"
 	"git.gay/h/homeswitch/db"
-	"git.gay/h/homeswitch/models"
+	"git.gay/h/homeswitch/mastoapi/form"
+	"git.gay/h/homeswitch/models/actor"
 	"github.com/rs/zerolog/log"
 
 	"github.com/alexedwards/argon2id"
 )
 
 type RegisterAccountForm struct {
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Agreement bool   `json:"agreement"`
-	Locale    string `json:"locale"`
+	Username  string `json:"username" validate:"required,username,max=30"`
+	Email     string `json:"email" validate:"required,email"`
+	Password  string `json:"password" validate:"required,min=8"`
+	Agreement bool   `json:"agreement" validate:"required"`
+	Locale    string `json:"locale" validate:"required"`
 	Reason    string `json:"reason"`
 }
 
 func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Require authentication
-	// TODO: send proper error codes
 
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
@@ -39,43 +39,54 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error reading body", http.StatusInternalServerError)
 		return
 	}
-	var form RegisterAccountForm
-	err = json.Unmarshal(body, &form)
+	var requestForm RegisterAccountForm
+	err = json.Unmarshal(body, &requestForm)
 	if err != nil {
 		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error unmarshalling JSON")
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	if !form.Agreement {
-		log.Error().Str("username", form.Username).Msg("User did not agree to terms")
-		http.Error(w, "User did not agree to terms", http.StatusUnauthorized)
+
+	ok, err := form.ValidateForm(requestForm)
+
+	if !ok {
+		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error validating form")
+		body, err := json.Marshal(err.(form.FormError))
+		if err != nil {
+			log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling form error")
+			http.Error(w, "Error marshalling form error", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write(body)
 		return
 	}
+
 	id, err := db.RandomId()
 	if err != nil {
-		log.Error().Err(err).Str("username", form.Username).Msg("Error generating random ID")
+		log.Error().Err(err).Str("username", requestForm.Username).Msg("Error generating random ID")
 		http.Error(w, "Error generating random ID", http.StatusInternalServerError)
 		return
 	}
 	privateKey, publicKey, err := crypto.GenerateKeyPair()
 	if err != nil {
-		log.Error().Err(err).Str("username", form.Username).Msg("Error generating key pair")
+		log.Error().Err(err).Str("username", requestForm.Username).Msg("Error generating key pair")
 		http.Error(w, "Error generating key pair", http.StatusInternalServerError)
 		return
 	}
 
-	hash, err := argon2id.CreateHash(form.Password, argon2id.DefaultParams)
+	hash, err := argon2id.CreateHash(requestForm.Password, argon2id.DefaultParams)
 	if err != nil {
-		log.Error().Err(err).Str("username", form.Username).Msg("Error hashing password")
+		log.Error().Err(err).Str("username", requestForm.Username).Msg("Error hashing password")
 		http.Error(w, "Error hashing password", http.StatusInternalServerError)
 		return
 	}
 
-	actor := models.Actor{
+	actor := actor.Actor{
 		ID:           id,
-		Username:     form.Username,
-		Name:         &form.Username,
-		Email:        form.Email,
+		Username:     requestForm.Username,
+		Name:         &requestForm.Username,
+		Email:        requestForm.Email,
 		Created:      time.Now().Unix(),
 		PrivateKey:   string(privateKey),
 		PublicKey:    string(publicKey),
@@ -83,7 +94,7 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = db.Engine.Insert(&actor)
 	if err != nil {
-		log.Error().Err(err).Str("username", form.Username).Msg("Error inserting actor")
+		log.Error().Err(err).Str("username", requestForm.Username).Msg("Error inserting actor")
 		http.Error(w, "Error inserting actor", http.StatusInternalServerError)
 		return
 	}

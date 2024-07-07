@@ -1,4 +1,4 @@
-package models
+package actor
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"git.gay/h/homeswitch/config"
 	"git.gay/h/homeswitch/db"
 	"git.gay/h/homeswitch/webfinger"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -71,18 +72,20 @@ func (a *Actor) ActivityPub() map[string]interface{} {
 	}
 }
 
-func GetActorByUsername(username string) (*Actor, error) {
-	actor := &Actor{
+func GetActorByUsername(username string) (actor *Actor, ok bool) {
+	actor = &Actor{
 		Username: username,
 	}
 	exists, err := db.Engine.Get(actor)
 	if err != nil {
-		return nil, err
+		log.Err(err).Str("username", username).Msg("Error getting actor by username")
+		return
 	}
 	if !exists {
-		return nil, ErrActorNotFound
+		return
 	}
-	return actor, nil
+	ok = true
+	return
 }
 
 func GetLocalActorCount() (count int64, err error) {

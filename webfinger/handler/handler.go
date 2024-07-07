@@ -6,8 +6,7 @@ import (
 	"regexp"
 
 	"git.gay/h/homeswitch/config"
-	"git.gay/h/homeswitch/db"
-	"git.gay/h/homeswitch/models"
+	"git.gay/h/homeswitch/models/actor"
 	"github.com/rs/zerolog/log"
 )
 
@@ -29,17 +28,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Debug().Str("username", username).Any("instance", instance).Msg("Webfinger request")
-	actor := &models.Actor{
-		Username: username,
-	}
-	found, err := db.Engine.Get(actor)
-	if err != nil {
-		log.Error().Err(err).Msg("Error getting actor")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if !found {
-		w.WriteHeader(http.StatusNotFound)
+	actor, ok := actor.GetActorByUsername(username)
+	if !ok {
+		http.Error(w, "Actor not found", http.StatusNotFound)
 		return
 	}
 	w.Header().Set("Content-Type", "application/jrd+json")

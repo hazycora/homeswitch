@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"git.gay/h/homeswitch/config"
-	"git.gay/h/homeswitch/models"
+	"git.gay/h/homeswitch/models/actor"
 )
 
 type Instance struct {
@@ -30,7 +30,7 @@ type Instance struct {
 	ApprovalRequired     bool                  `json:"approval_required"`
 	InvitesEnabled       bool                  `json:"invites_enabled"`
 	Configuration        InstanceConfiguration `json:"configuration"`
-	ContactAccount       models.Actor          `json:"contact_account"`
+	ContactAccount       actor.Actor           `json:"contact_account"`
 	Rules                []InstanceRule        `json:"rules"`
 }
 
@@ -134,15 +134,15 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	instance.Thumbnail = fmt.Sprintf("https://%s/static/banner.png", config.ServerName)
 	instance.URLs.StreamingAPI = fmt.Sprintf("wss://%s", config.ServerName)
 
-	userCount, err := models.GetLocalActorCount()
+	userCount, err := actor.GetLocalActorCount()
 	if err != nil {
 		http.Error(w, "Error getting user count", http.StatusInternalServerError)
 		return
 	}
 	instance.Stats.UserCount = userCount
 
-	ContactAccount, err := models.GetActorByUsername(config.AdminUsername)
-	if err != nil {
+	ContactAccount, ok := actor.GetActorByUsername(config.AdminUsername)
+	if !ok {
 		http.Error(w, "Error getting contact account", http.StatusInternalServerError)
 		return
 	}
