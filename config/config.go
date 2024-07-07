@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -8,6 +9,7 @@ import (
 
 var (
 	ServerName             = os.Getenv("SERVER_NAME")
+	ServerURL              = fmt.Sprintf("https://%s", ServerName)
 	ServerTitle            = os.Getenv("SERVER_TITLE")
 	AdminEmail             = os.Getenv("ADMIN_EMAIL")
 	ServerDescription      = os.Getenv("SERVER_DESCRIPTION")

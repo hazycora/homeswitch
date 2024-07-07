@@ -2,13 +2,12 @@ package apps
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
-	"git.gay/h/homeswitch/mastoapi/apicontext"
-	"git.gay/h/homeswitch/mastoapi/form"
 	app_model "git.gay/h/homeswitch/models/app"
+	"git.gay/h/homeswitch/router/mastoapi/apicontext"
+	"git.gay/h/homeswitch/router/mastoapi/form"
 	"github.com/rs/zerolog/log"
 )
 
@@ -44,7 +43,6 @@ func CreateAppHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		w.Write(body)
-		fmt.Println(string(body))
 		return
 	}
 
@@ -77,7 +75,6 @@ func CreateAppHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(string(body))
 	w.Write(body)
 }
 

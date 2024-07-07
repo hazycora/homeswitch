@@ -7,6 +7,7 @@ import (
 	"git.gay/h/homeswitch/config"
 	"git.gay/h/homeswitch/db"
 	"git.gay/h/homeswitch/webfinger"
+	"github.com/alexedwards/argon2id"
 	"github.com/rs/zerolog/log"
 )
 
@@ -82,6 +83,46 @@ func GetActorByUsername(username string) (actor *Actor, ok bool) {
 		return
 	}
 	if !exists {
+		return
+	}
+	ok = true
+	return
+}
+
+func GetActorByID(id string) (actor *Actor, ok bool) {
+	actor = &Actor{
+		ID: id,
+	}
+	exists, err := db.Engine.Get(actor)
+	if err != nil {
+		log.Err(err).Str("id", id).Msg("Error getting actor by ID")
+		return
+	}
+	if !exists {
+		return
+	}
+	ok = true
+	return
+}
+
+func ActorLogin(email string, password string) (actor *Actor, ok bool) {
+	actor = &Actor{
+		Email: email,
+	}
+	exists, err := db.Engine.Get(actor)
+	if err != nil {
+		log.Err(err).Str("email", email).Msg("Error getting actor by email")
+		return
+	}
+	if !exists {
+		return
+	}
+	match, err := argon2id.ComparePasswordAndHash(password, actor.PasswordHash)
+	if err != nil {
+		log.Err(err).Str("email", email).Str("username", actor.Username).Msg("Error comparing password and hash")
+		return
+	}
+	if !match {
 		return
 	}
 	ok = true

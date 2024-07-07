@@ -8,8 +8,9 @@ import (
 
 	"git.gay/h/homeswitch/crypto"
 	"git.gay/h/homeswitch/db"
-	"git.gay/h/homeswitch/mastoapi/form"
-	"git.gay/h/homeswitch/models/actor"
+	actor_model "git.gay/h/homeswitch/models/actor"
+	"git.gay/h/homeswitch/router/mastoapi/apicontext"
+	"git.gay/h/homeswitch/router/mastoapi/form"
 	"github.com/rs/zerolog/log"
 
 	"github.com/alexedwards/argon2id"
@@ -79,7 +80,7 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actor := actor.Actor{
+	actor := actor_model.Actor{
 		ID:           id,
 		Username:     requestForm.Username,
 		Name:         &requestForm.Username,
@@ -97,4 +98,17 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(""))
+}
+
+func VerifyCredentialsHandler(w http.ResponseWriter, r *http.Request) {
+	actor := r.Context().Value(apicontext.UserContextKey).(*actor_model.Actor)
+	body, err := json.Marshal(actor)
+	if err != nil {
+		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling response")
+		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
+		return
+	}
+	// Seems missing fields on the user causes this not work in the Ice Cubes client.
+	// TODO: Fix this!
+	w.Write(body)
 }

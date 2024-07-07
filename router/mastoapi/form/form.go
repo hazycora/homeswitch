@@ -74,9 +74,18 @@ func ValidateForm(form interface{}) (err error) {
 		case "username":
 			mastoAPIErrorCode = "ERR_INVALID"
 			mastoAPIErrorDescription = "must contain only letters, numbers and underscores"
+		case "email":
+			mastoAPIErrorCode = "ERR_INVALID"
+			mastoAPIErrorDescription = "must be an email address"
 		case "max":
 			mastoAPIErrorCode = "ERR_TOO_LONG"
-			mastoAPIErrorDescription = "is too long (maximum is whatever characters)"
+			mastoAPIErrorDescription = "is too long"
+		case "min":
+			mastoAPIErrorCode = "ERR_TOO_SHORT"
+			mastoAPIErrorDescription = "is too short"
+		case "eq":
+			mastoAPIErrorCode = "ERR_INVALID"
+			mastoAPIErrorDescription = "is invalid"
 		}
 
 		if _, ok := formError.Details[jsonName]; !ok {

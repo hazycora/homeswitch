@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 
+	"git.gay/h/homeswitch/config"
 	"git.gay/h/homeswitch/crypto"
 	"git.gay/h/homeswitch/db"
 	"github.com/rs/zerolog/log"
@@ -10,10 +11,26 @@ import (
 
 var (
 	ErrAppNotFound = errors.New("app not found")
+	SystemApp      *App
 )
 
 func init() {
 	db.Engine.Sync(new(App))
+	SystemApp = &App{
+		ID:      "0",
+		Name:    "homeswitch",
+		Website: config.ServerURL,
+	}
+	ok, err := db.Engine.Get(SystemApp)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error getting system app")
+	}
+	if !ok {
+		err = CreateApp(SystemApp)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Error creating system app")
+		}
+	}
 }
 
 type App struct {
@@ -28,12 +45,15 @@ type App struct {
 }
 
 func CreateApp(a *App) (err error) {
-	id, err := db.RandomId()
-	if err != nil {
-		log.Error().Err(err).Msg("Error generating random ID")
-		return
+	if a.ID == "" {
+		var id string
+		id, err = db.RandomId()
+		if err != nil {
+			log.Error().Err(err).Msg("Error generating random ID")
+			return
+		}
+		a.ID = id
 	}
-	a.ID = id
 	clientId, err := crypto.RandomString(32)
 	if err != nil {
 		log.Error().Err(err).Msg("Error generating client secret")
@@ -50,9 +70,9 @@ func CreateApp(a *App) (err error) {
 	return
 }
 
-func GetAppByToken(token string) (app *App, err error) {
+func GetApp(clientId string) (app *App, err error) {
 	app = &App{
-		ClientSecret: token,
+		ClientID: clientId,
 	}
 	ok, err := db.Engine.Get(app)
 	if err != nil {

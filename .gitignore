@@ -5,3 +5,5 @@
 !.env.example
 
 *.db
+public
+node_modules
