@@ -13,4 +13,8 @@ var (
 	ServerDescription      = os.Getenv("SERVER_DESCRIPTION")
 	ServerShortDescription = os.Getenv("SERVER_SHORT_DESCRIPTION")
 	AdminUsername          = os.Getenv("ADMIN_USERNAME")
+
+	RegistrationsEnabled = os.Getenv("REGISTRATIONS_ENABLED") == "true"
+	ApprovalRequired     = os.Getenv("APPROVAL_REQUIRED") == "true"
+	InvitesEnabled       = os.Getenv("INVITES_ENABLED") == "true"
 )

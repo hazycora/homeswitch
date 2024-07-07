@@ -121,17 +121,20 @@ func init() {
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	instance := Instance{
-		URI:              fmt.Sprintf("https://%s", config.ServerName),
-		Title:            config.ServerTitle,
-		ShortDescription: config.ServerShortDescription,
-		Description:      config.ServerDescription,
-		Rules:            []InstanceRule{},
-		Version:          "0.0.1 (compatible; Homeswitch)",
-		Email:            config.AdminEmail,
-		Languages:        []string{"en"},
-		Configuration:    configuration,
+		URI:                  fmt.Sprintf("https://%s", config.ServerName),
+		Title:                config.ServerTitle,
+		ShortDescription:     config.ServerShortDescription,
+		Description:          config.ServerDescription,
+		Rules:                []InstanceRule{},
+		Version:              "0.0.1 (compatible; Homeswitch)",
+		Thumbnail:            fmt.Sprintf("https://%s/static/banner.png", config.ServerName),
+		Languages:            []string{"en"},
+		RegistrationsEnabled: config.RegistrationsEnabled,
+		ApprovalRequired:     config.ApprovalRequired,
+		InvitesEnabled:       config.InvitesEnabled,
+		Email:                config.AdminEmail,
+		Configuration:        configuration,
 	}
-	instance.Thumbnail = fmt.Sprintf("https://%s/static/banner.png", config.ServerName)
 	instance.URLs.StreamingAPI = fmt.Sprintf("wss://%s", config.ServerName)
 
 	userCount, err := actor.GetLocalActorCount()

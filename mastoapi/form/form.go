@@ -35,10 +35,9 @@ type FormErrorDetail struct {
 	Description string `json:"description"`
 }
 
-func ValidateForm(form interface{}) (ok bool, err error) {
+func ValidateForm(form interface{}) (err error) {
 	err = validate.Struct(form)
 	if err == nil {
-		ok = true
 		return
 	}
 

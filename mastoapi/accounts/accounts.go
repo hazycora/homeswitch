@@ -25,13 +25,6 @@ type RegisterAccountForm struct {
 }
 
 func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: Require authentication
-
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		log.Error().Str("path", r.URL.Path).Str("content-type", contentType).Msg("Invalid content type")
-		http.Error(w, "Invalid content type", http.StatusBadRequest)
-	}
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -46,12 +39,16 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-
-	ok, err := form.ValidateForm(requestForm)
-
-	if !ok {
-		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error validating form")
-		body, err := json.Marshal(err.(form.FormError))
+	err = form.ValidateForm(requestForm)
+	if err != nil {
+		formError, ok := err.(form.FormError)
+		if !ok {
+			log.Error().Err(err).Str("path", r.URL.Path).Msg("Error validating form")
+			http.Error(w, "Error validating form", http.StatusInternalServerError)
+			return
+		}
+		log.Debug().Err(formError).Str("path", r.URL.Path).Msg("Received invalid form")
+		body, err := json.Marshal(formError)
 		if err != nil {
 			log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling form error")
 			http.Error(w, "Error marshalling form error", http.StatusInternalServerError)
