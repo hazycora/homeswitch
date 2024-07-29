@@ -6,6 +6,7 @@ import (
 	"git.gay/h/homeswitch/config"
 	"git.gay/h/homeswitch/crypto"
 	"git.gay/h/homeswitch/db"
+
 	"github.com/rs/zerolog/log"
 )
 
@@ -35,12 +36,12 @@ func init() {
 
 type App struct {
 	ID           string   `json:"id" xorm:"'id' pk notnull unique"`
-	Name         string   `json:"name" xorm:"varchar(255) notnull"`
-	RedirectURI  string   `json:"redirect_uris"`
-	ClientID     string   `json:"client_id" xorm:"varchar(255) notnull unique"`
-	ClientSecret string   `json:"client_secret" xorm:"varchar(255) notnull"`
-	Scopes       []string `json:"scopes"`
-	Website      string   `json:"website" xorm:"varchar(255) notnull"`
+	Name         string   `json:"name" xorm:"'name' varchar(255) notnull"`
+	RedirectURI  string   `json:"redirect_uris" xorm:"'redirect_uri'"`
+	ClientID     string   `json:"client_id" xorm:"'client_id' varchar(255) notnull unique"`
+	ClientSecret string   `json:"client_secret" xorm:"'client_secret' varchar(255) notnull"`
+	Scopes       []string `json:"scopes" xorm:"'scopes'"`
+	Website      string   `json:"website" xorm:"'website' varchar(255) notnull"`
 	// TODO: Add VapidKey
 }
 

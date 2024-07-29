@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	DBConnectionUri        = os.Getenv("DB_CONN_URI")
 	ServerName             = os.Getenv("SERVER_NAME")
 	ServerURL              = fmt.Sprintf("https://%s", ServerName)
 	ServerTitle            = os.Getenv("SERVER_TITLE")

@@ -12,8 +12,10 @@ import (
 	"git.gay/h/homeswitch/router/mastoapi/apicontext"
 	"git.gay/h/homeswitch/router/mastoapi/apps"
 	"git.gay/h/homeswitch/router/mastoapi/instance"
+	"git.gay/h/homeswitch/router/middleware"
 
 	"github.com/go-chi/chi/v5"
+	chi_middleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog/log"
 )
 
@@ -32,7 +34,6 @@ func AddAuthorizationContext(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			log.Debug().Msg("Authorization header unset")
 			h.ServeHTTP(w, r)
 			return
 		}
@@ -96,9 +97,13 @@ func RequireUserAuthentication(h http.Handler) http.Handler {
 
 func Router() http.Handler {
 	r := chi.NewRouter()
+	r.Use(chi_middleware.StripSlashes)
+	r.Use(middleware.AllowCORS)
+
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(AddAuthorizationContext)
 		r.Post("/apps", apps.CreateAppHandler)
+		r.Get("/custom_emojis", instance.CustomEmojiHandler)
 		r.Get("/instance", instance.Handler)
 
 		r.Group(func(r chi.Router) {
@@ -110,7 +115,7 @@ func Router() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(RequirePostJSONBody)
 			r.Use(RequireUserAuthentication)
-			r.Get("/accounts/verify_credentials", apps.VerifyCredentialsHandler)
+			r.Get("/accounts/verify_credentials", accounts.VerifyCredentialsHandler)
 		})
 	})
 	return r

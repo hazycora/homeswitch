@@ -10,15 +10,17 @@ import (
 	token_model "git.gay/h/homeswitch/models/token"
 	"git.gay/h/homeswitch/router/mastoapi"
 	"git.gay/h/homeswitch/router/mastoapi/oauth"
+	"git.gay/h/homeswitch/router/middleware"
 	"git.gay/h/homeswitch/router/tmpl"
 	webfingerHandler "git.gay/h/homeswitch/webfinger/handler"
-	"github.com/go-chi/chi/middleware"
+
 	"github.com/go-chi/chi/v5"
+	chi_middleware "github.com/go-chi/chi/v5/middleware"
 )
 
 func GetRouter() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(chi_middleware.Logger)
 	r.Use(func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Server", "homeswitch (https://git.gay/h/homeswitch)")
@@ -35,10 +37,14 @@ func GetRouter() http.Handler {
 
 	r.Mount("/api", mastoapi.Router())
 
-	r.Get("/oauth/authorize", oauth.AuthorizeHandler)
-	r.Post("/oauth/token", oauth.TokenHandler)
-	r.Get("/auth/sign_in", func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Render(w, "auth/signin", nil)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AllowCORS)
+
+		r.Get("/oauth/authorize", oauth.AuthorizeHandler)
+		r.Post("/oauth/token", oauth.TokenHandler)
+		r.Get("/auth/sign_in", func(w http.ResponseWriter, r *http.Request) {
+			tmpl.Render(w, "auth/signin", nil)
+		})
 	})
 	r.Post("/auth/sign_in", func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
@@ -65,11 +71,11 @@ func GetRouter() http.Handler {
 			HttpOnly: true,
 			Secure:   true,
 			Path:     "/",
-			SameSite: http.SameSiteStrictMode,
+			SameSite: http.SameSiteDefaultMode,
 			MaxAge:   int(time.Hour.Seconds() * 24 * 30),
 		})
 		w.Write([]byte("Signed in!"))
 	})
-	r.Mount("/", http.FileServer(http.Dir("public")))
+	r.Mount("/", GetStaticRouter())
 	return r
 }

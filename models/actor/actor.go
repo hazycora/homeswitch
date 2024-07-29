@@ -6,6 +6,7 @@ import (
 
 	"git.gay/h/homeswitch/config"
 	"git.gay/h/homeswitch/db"
+	"git.gay/h/homeswitch/utils/marshaltime"
 	"git.gay/h/homeswitch/webfinger"
 	"github.com/alexedwards/argon2id"
 	"github.com/rs/zerolog/log"
@@ -13,6 +14,13 @@ import (
 
 var (
 	ErrActorNotFound = errors.New("actor not found")
+	EmptyRole        = map[string]interface{}{
+		"id":          "-99",
+		"name":        "",
+		"permissions": "0",
+		"color":       "",
+		"highlighted": false,
+	}
 )
 
 func init() {
@@ -20,16 +28,35 @@ func init() {
 }
 
 type Actor struct {
-	ID           string  `json:"id" xorm:"'id' pk notnull unique"`
-	Username     string  `json:"username" xorm:"varchar(25) notnull"`
-	Acct         string  `json:"acct" xorm:"varchar(255) notnull unique"`
-	Name         *string `json:"display_name" xorm:"varchar(255) null"`
-	Email        string  `json:"-"`
-	Bio          *string `json:"note" xorm:"varchar(8096) null"`
-	Created      int64   `json:"created_at" xorm:"'created'"`
-	PrivateKey   string  `json:"-" xorm:"notnull"`
-	PublicKey    string  `json:"public_key" xorm:"notnull"`
-	PasswordHash string  `json:"-" xorm:"varchar(128) notnull"`
+	ID              string           `json:"id" xorm:"'id' pk notnull unique"`
+	Username        string           `json:"username" xorm:"'username' varchar(25) notnull"`
+	Acct            string           `json:"acct" xorm:"'acct' varchar(255) notnull unique"`
+	Name            *string          `json:"display_name" xorm:"'name' varchar(255) null"`
+	Email           string           `json:"-" xorm:"'email'"`
+	AvatarID        *string          `json:"-" xorm:"'avatar' null"`
+	HeaderID        *string          `json:"-" xorm:"'header' null"`
+	Bio             *string          `json:"note" xorm:"'bio' varchar(8096) null"`
+	Created         marshaltime.Time `json:"created_at" xorm:"'created' created"`
+	PrivateKey      string           `json:"-" xorm:"'private_key' text notnull"`
+	PublicKey       string           `json:"-" xorm:"'public_key' text notnull"`
+	PasswordHash    string           `json:"-" xorm:"'password_hash' varchar(128) notnull"`
+	Locked          bool             `json:"locked"`
+	Bot             bool             `json:"bot"`
+	Discoverable    bool             `json:"discoverable"`
+	Indexable       bool             `json:"indexable"`
+	NoIndex         bool             `json:"noindex"`
+	HideCollections bool             `json:"hide_collections"`
+	FollowersCount  int64            `json:"followers_count"`
+	FollowingCount  int64            `json:"following_count"`
+	StatusesCount   int64            `json:"statuses_count"`
+	Fields          []Field          `json:"fields"`
+	Settings        ActorSettings    `json:"-" xorm:"jsonb"`
+}
+
+type Field struct {
+	Name       string            `json:"name"`
+	Value      string            `json:"value"`
+	VerifiedAt *marshaltime.Time `json:"verified_at"`
 }
 
 func (a *Actor) TableName() string {

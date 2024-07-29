@@ -11,6 +11,6 @@ func RandomString(byteLength int64) (str string, err error) {
 	if err != nil {
 		return
 	}
-	str = base64.URLEncoding.EncodeToString(b)
+	str = base64.RawURLEncoding.EncodeToString(b)
 	return
 }

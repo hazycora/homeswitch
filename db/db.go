@@ -4,7 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
-	_ "github.com/mattn/go-sqlite3"
+	"git.gay/h/homeswitch/config"
+	_ "github.com/lib/pq"
 	"xorm.io/xorm"
 )
 
@@ -12,7 +13,7 @@ var Engine *xorm.Engine
 
 func init() {
 	var err error
-	Engine, err = xorm.NewEngine("sqlite3", "./test.db")
+	Engine, err = xorm.NewEngine("postgres", config.DBConnectionUri)
 	if err != nil {
 		panic(err)
 	}

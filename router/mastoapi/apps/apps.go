@@ -8,6 +8,7 @@ import (
 	app_model "git.gay/h/homeswitch/models/app"
 	"git.gay/h/homeswitch/router/mastoapi/apicontext"
 	"git.gay/h/homeswitch/router/mastoapi/form"
+	"git.gay/h/homeswitch/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -19,7 +20,7 @@ type CreateAppForm struct {
 }
 
 func CreateAppHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	utils.ParseForm(r)
 	requestForm := CreateAppForm{
 		ClientName:  r.Form.Get("client_name"),
 		RedirectURI: r.Form.Get("redirect_uris"),

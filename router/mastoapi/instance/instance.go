@@ -7,6 +7,7 @@ import (
 
 	"git.gay/h/homeswitch/config"
 	"git.gay/h/homeswitch/models/actor"
+	"github.com/rs/zerolog/log"
 )
 
 type Instance struct {
@@ -139,6 +140,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	userCount, err := actor.GetLocalActorCount()
 	if err != nil {
+		log.Error().Err(err).Msg("Could not get local actor count")
 		http.Error(w, "Error getting user count", http.StatusInternalServerError)
 		return
 	}

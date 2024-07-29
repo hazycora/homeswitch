@@ -4,16 +4,12 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"time"
 
-	"git.gay/h/homeswitch/crypto"
-	"git.gay/h/homeswitch/db"
+	"git.gay/h/homeswitch/config"
 	actor_model "git.gay/h/homeswitch/models/actor"
 	"git.gay/h/homeswitch/router/mastoapi/apicontext"
 	"git.gay/h/homeswitch/router/mastoapi/form"
 	"github.com/rs/zerolog/log"
-
-	"github.com/alexedwards/argon2id"
 )
 
 type RegisterAccountForm struct {
@@ -26,8 +22,12 @@ type RegisterAccountForm struct {
 }
 
 func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	if !config.RegistrationsEnabled {
+		http.Error(w, "Registrations not enabled.", http.StatusForbidden)
+	}
+
 	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error reading body")
 		http.Error(w, "Error reading body", http.StatusInternalServerError)
@@ -60,55 +60,29 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := db.RandomId()
-	if err != nil {
-		log.Error().Err(err).Str("username", requestForm.Username).Msg("Error generating random ID")
-		http.Error(w, "Error generating random ID", http.StatusInternalServerError)
-		return
+	actor := &actor_model.Actor{
+		Username: requestForm.Username,
+		Name:     &requestForm.Username,
+		Email:    requestForm.Email,
 	}
-	privateKey, publicKey, err := crypto.GenerateKeyPair()
+	err = actor_model.CreateActor(actor, requestForm.Password)
 	if err != nil {
-		log.Error().Err(err).Str("username", requestForm.Username).Msg("Error generating key pair")
-		http.Error(w, "Error generating key pair", http.StatusInternalServerError)
-		return
+		http.Error(w, "Error creating account", http.StatusInternalServerError)
 	}
 
-	hash, err := argon2id.CreateHash(requestForm.Password, argon2id.DefaultParams)
-	if err != nil {
-		log.Error().Err(err).Str("username", requestForm.Username).Msg("Error hashing password")
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
-		return
-	}
-
-	actor := actor_model.Actor{
-		ID:           id,
-		Username:     requestForm.Username,
-		Name:         &requestForm.Username,
-		Email:        requestForm.Email,
-		Created:      time.Now().Unix(),
-		PrivateKey:   string(privateKey),
-		PublicKey:    string(publicKey),
-		PasswordHash: hash,
-	}
-	_, err = db.Engine.Insert(&actor)
-	if err != nil {
-		log.Error().Err(err).Str("username", requestForm.Username).Msg("Error inserting actor")
-		http.Error(w, "Error inserting actor", http.StatusInternalServerError)
-		return
-	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(""))
 }
 
 func VerifyCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 	actor := r.Context().Value(apicontext.UserContextKey).(*actor_model.Actor)
-	body, err := json.Marshal(actor)
+	body, err := json.Marshal(actor.ToAccount(true))
 	if err != nil {
 		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling response")
 		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
 		return
 	}
-	// Seems missing fields on the user causes this not work in the Ice Cubes client.
-	// TODO: Fix this!
+	w.Header().Set("content-type", "application/json")
 	w.Write(body)
+	log.Debug().Any("body", string(body)).Msg("verify_credentials, sob")
 }

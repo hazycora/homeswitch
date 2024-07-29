@@ -3,7 +3,6 @@ package oauth
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	app_model "git.gay/h/homeswitch/models/app"
 	token_model "git.gay/h/homeswitch/models/token"
 	"git.gay/h/homeswitch/router/mastoapi/form"
+	"git.gay/h/homeswitch/utils"
 
 	"github.com/hazycora/go-mcache"
 	"github.com/rs/zerolog/log"
@@ -69,9 +69,11 @@ func AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token, err := token_model.GetToken(accessToken.Value)
-	if err == nil && token.UserID != nil {
-		codeCache.Set(code, *token.UserID, time.Hour)
+	if err != nil {
+		http.Error(w, "Error getting token", http.StatusUnauthorized)
+		return
 	}
+	codeCache.Set(code, *token.UserID, time.Hour)
 
 	if requestForm.RedirectURI == "urn:ietf:wg:oauth:2.0:oob" {
 		fmt.Fprintf(w, "Code: %s", code)
@@ -91,19 +93,17 @@ type TokenForm struct {
 }
 
 func TokenHandler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	requestBody, err := io.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
+	utils.ParseForm(r)
+	formCode := r.FormValue("code")
+	requestForm := &TokenForm{
+		GrantType:    r.FormValue("grant_type"),
+		Code:         &formCode,
+		ClientID:     r.FormValue("client_id"),
+		ClientSecret: r.FormValue("client_secret"),
+		RedirectURI:  r.FormValue("redirect_uri"),
+		Scope:        r.FormValue("scope"),
 	}
-	requestForm := &TokenForm{}
-	err = json.Unmarshal(requestBody, requestForm)
-	if err != nil {
-		http.Error(w, "Error parsing request", http.StatusBadRequest)
-		log.Debug().Err(err).Str("body", string(requestBody)).Msg("Error parsing request")
-		return
-	}
-	err = form.ValidateForm(requestForm)
+	err := form.ValidateForm(*requestForm)
 	if err != nil {
 		formError, ok := err.(form.FormError)
 		if !ok {
