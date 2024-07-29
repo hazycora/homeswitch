@@ -29,7 +29,9 @@ func GetRouter() http.Handler {
 		return http.HandlerFunc(fn)
 	})
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("homeswitch!"))
+		w.Header().Add("Content-Type", "text/html")
+		w.Write([]byte(`<style>:root {color-scheme: light dark; font-family: system-ui, sans-serif;}</style>
+		<a href="https://homeswit.ch" target="_blank">homeswitch</a> - a work-in-progress fediverse server.`))
 	})
 	r.Get("/.well-known/webfinger", webfingerHandler.Handler)
 	r.Get("/@{username}", activitypub.ActorHandler)
