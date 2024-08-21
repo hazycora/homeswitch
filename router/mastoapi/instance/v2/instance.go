@@ -1,4 +1,4 @@
-package instance
+package instance_v2
 
 import (
 	"encoding/json"
@@ -7,37 +7,43 @@ import (
 
 	"git.gay/h/homeswitch/config"
 	"git.gay/h/homeswitch/models/actor"
-	"github.com/rs/zerolog/log"
+	"git.gay/h/homeswitch/version"
 )
 
 type Instance struct {
-	URI              string `json:"uri"`
-	Title            string `json:"title"`
-	ShortDescription string `json:"short_description"`
-	Description      string `json:"description"`
-	Email            string `json:"email"`
-	Version          string `json:"version"`
-	URLs             struct {
-		StreamingAPI string `json:"streaming_api"`
-	} `json:"urls"`
-	Stats struct {
-		UserCount   int64 `json:"user_count"`
-		StatusCount int64 `json:"status_count"`
-		DomainCount int64 `json:"domain_count"`
-	} `json:"stats"`
-	Thumbnail            string                `json:"thumbnail"`
-	Languages            []string              `json:"languages"`
-	RegistrationsEnabled bool                  `json:"registrations"`
-	ApprovalRequired     bool                  `json:"approval_required"`
-	InvitesEnabled       bool                  `json:"invites_enabled"`
-	Configuration        InstanceConfiguration `json:"configuration"`
-	ContactAccount       actor.Actor           `json:"contact_account"`
-	Rules                []InstanceRule        `json:"rules"`
+	Domain        string                `json:"domain"`
+	Title         string                `json:"title"`
+	Version       string                `json:"version"`
+	SourceURL     string                `json:"source_url"`
+	Description   string                `json:"description"`
+	Thumbnail     InstanceThumbnail     `json:"thumbnail"`
+	Languages     []string              `json:"languages"`
+	Configuration InstanceConfiguration `json:"configuration"`
+	Registrations InstanceRegistrations `json:"registrations"`
+	Contact       InstanceContact       `json:"contact"`
+	Rules         []InstanceRule        `json:"rules"`
+}
+
+type InstanceThumbnail struct {
+	URL      string `json:"url"`
+	Blurhash string `json:"blurhash"`
+	Versions struct {
+		Standard string `json:"@1x"`
+		Large    string `json:"@2x"`
+	}
 }
 
 type InstanceConfiguration struct {
+	URLs struct {
+		Streaming string `json:"streaming"`
+		Status    string `json:"status"`
+	} `json:"urls"`
+	Vapid struct {
+		PublicKey string `json:"public_key"`
+	} `json:"vapid"`
 	Accounts struct {
-		MaxFeaturedTags int64 `json:"max_featured_tags"`
+		MaxPinnedStatuses int64 `json:"max_pinned_statuses"`
+		MaxFeaturedTags   int64 `json:"max_featured_tags"`
 	} `json:"accounts"`
 	Statuses struct {
 		MaxCharacters            int64    `json:"max_characters"`
@@ -60,9 +66,24 @@ type InstanceConfiguration struct {
 		MinExpiration          int64 `json:"min_expiration"`
 		MaxExpiration          int64 `json:"max_expiration"`
 	} `json:"polls"`
+	Translation struct {
+		Enabled bool `json:"enabled"`
+	} `json:"translation"`
 	Reactions struct {
 		MaxReactions int64 `json:"max_reactions"`
 	} `json:"reactions"`
+}
+
+type InstanceRegistrations struct {
+	Enabled          bool    `json:"enabled"`
+	ApprovalRequired bool    `json:"approval_required"`
+	Message          string  `json:"message"`
+	URL              *string `json:"url"`
+}
+
+type InstanceContact struct {
+	Email   string      `json:"email"`
+	Account actor.Actor `json:"account"`
 }
 
 type InstanceRule struct {
@@ -74,6 +95,8 @@ type InstanceRule struct {
 var configuration = InstanceConfiguration{}
 
 func init() {
+	configuration.URLs.Streaming = fmt.Sprintf("wss://%s", config.ServerName)
+	configuration.Accounts.MaxPinnedStatuses = 32
 	configuration.Accounts.MaxFeaturedTags = 4
 	configuration.Statuses.MaxCharacters = 4096
 	configuration.Statuses.MaxMediaAttachments = 4
@@ -122,36 +145,33 @@ func init() {
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	instance := Instance{
-		URI:                  fmt.Sprintf("https://%s", config.ServerName),
-		Title:                config.ServerTitle,
-		ShortDescription:     config.ServerShortDescription,
-		Description:          config.ServerDescription,
-		Rules:                []InstanceRule{},
-		Version:              "0.0.1 (compatible; Homeswitch)",
-		Thumbnail:            fmt.Sprintf("https://%s/static/banner.png", config.ServerName),
-		Languages:            []string{"en"},
-		RegistrationsEnabled: config.RegistrationsEnabled,
-		ApprovalRequired:     config.ApprovalRequired,
-		InvitesEnabled:       config.InvitesEnabled,
-		Email:                config.AdminEmail,
-		Configuration:        configuration,
+		Domain:      config.ServerName,
+		Title:       config.ServerTitle,
+		Description: config.ServerDescription,
+		Rules:       []InstanceRule{},
+		Version:     version.FullVersion,
+		Thumbnail: InstanceThumbnail{
+			URL: fmt.Sprintf("https://%s/static/banner.png", config.ServerName),
+		},
+		Registrations: InstanceRegistrations{
+			Enabled:          config.RegistrationsEnabled,
+			ApprovalRequired: config.ApprovalRequired,
+		},
+		Languages: []string{"en"},
+		Contact: InstanceContact{
+			Email: config.AdminEmail,
+		},
+		Configuration: configuration,
 	}
-	instance.URLs.StreamingAPI = fmt.Sprintf("wss://%s", config.ServerName)
-
-	userCount, err := actor.GetLocalActorCount()
-	if err != nil {
-		log.Error().Err(err).Msg("Could not get local actor count")
-		http.Error(w, "Error getting user count", http.StatusInternalServerError)
-		return
-	}
-	instance.Stats.UserCount = userCount
+	// TODO: proper usage data
 
 	ContactAccount, ok := actor.GetActorByUsername(config.AdminUsername)
 	if !ok {
 		http.Error(w, "Error getting contact account", http.StatusInternalServerError)
 		return
 	}
-	instance.ContactAccount = *ContactAccount
+	instance.Contact.Account = *ContactAccount
+
 	body, err := json.Marshal(instance)
 	if err != nil {
 		http.Error(w, "Error marshalling instance", http.StatusInternalServerError)

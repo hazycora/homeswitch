@@ -11,6 +11,7 @@ import (
 	"git.gay/h/homeswitch/router/mastoapi"
 	"git.gay/h/homeswitch/router/mastoapi/oauth"
 	"git.gay/h/homeswitch/router/middleware"
+	"git.gay/h/homeswitch/router/nodeinfo"
 	"git.gay/h/homeswitch/router/tmpl"
 	webfingerHandler "git.gay/h/homeswitch/webfinger/handler"
 
@@ -34,6 +35,10 @@ func GetRouter() http.Handler {
 		<a href="https://homeswit.ch" target="_blank">homeswitch</a> - a work-in-progress fediverse server.`))
 	})
 	r.Get("/.well-known/webfinger", webfingerHandler.Handler)
+	r.Get("/.well-known/nodeinfo", nodeinfo.WellKnownHandler)
+	r.Get("/nodeinfo/2.0", nodeinfo.Handler)
+	r.Get("/nodeinfo/2.0.json", nodeinfo.Handler)
+
 	r.Get("/@{username}", activitypub.ActorHandler)
 	r.Post("/@{username}/inbox", activitypub.InboxHandler)
 

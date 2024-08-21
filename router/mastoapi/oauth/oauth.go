@@ -94,10 +94,13 @@ type TokenForm struct {
 
 func TokenHandler(w http.ResponseWriter, r *http.Request) {
 	utils.ParseForm(r)
-	formCode := r.FormValue("code")
+	var formCode *string
+	if code := r.FormValue("code"); code != "" {
+		formCode = &code
+	}
 	requestForm := &TokenForm{
 		GrantType:    r.FormValue("grant_type"),
-		Code:         &formCode,
+		Code:         formCode,
 		ClientID:     r.FormValue("client_id"),
 		ClientSecret: r.FormValue("client_secret"),
 		RedirectURI:  r.FormValue("redirect_uri"),
@@ -137,6 +140,10 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	app, err := app_model.GetApp(requestForm.ClientID)
 	if err != nil || app.ClientSecret != requestForm.ClientSecret {
+		log.Error().Err(err).Str("client_id", requestForm.ClientID).Msg("Failed to get app")
+		if err == nil {
+			log.Debug().Str("secret", app.ClientSecret).Str("claimed_secret", requestForm.ClientSecret).Msg("Secrets")
+		}
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}

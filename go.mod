@@ -21,6 +21,7 @@ require (
 )
 
 require (
+	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/chi/v5 v5.1.0

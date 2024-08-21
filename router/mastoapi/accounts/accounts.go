@@ -9,6 +9,7 @@ import (
 	actor_model "git.gay/h/homeswitch/models/actor"
 	"git.gay/h/homeswitch/router/mastoapi/apicontext"
 	"git.gay/h/homeswitch/router/mastoapi/form"
+	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 )
 
@@ -85,4 +86,57 @@ func VerifyCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	w.Write(body)
 	log.Debug().Any("body", string(body)).Msg("verify_credentials, sob")
+}
+
+func GetAccountHandler(w http.ResponseWriter, r *http.Request) {
+	accountId := chi.URLParam(r, "id")
+	actor, ok := actor_model.GetActorByID(accountId)
+	if !ok {
+		// TODO: error should be same as Mastodon
+		http.Error(w, "Record not found", http.StatusNotFound)
+		return
+	}
+	account := actor.ToAccount(false)
+
+	body, err := json.Marshal(account)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(body)
+}
+
+func LookupAccountHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	acct := r.Form.Get("acct")
+	actor, ok := actor_model.GetActorByUsername(acct)
+	if !ok {
+		// TODO: error should be same as Mastodon
+		http.Error(w, "Record not found", http.StatusNotFound)
+		return
+	}
+	account := actor.ToAccount(false)
+
+	body, err := json.Marshal(account)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(body)
+}
+
+// TODO: implement
+func FeaturedTagsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
+	w.Write([]byte("[]"))
+}
+
+// TODO: implement
+func StatusesHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
+	w.Write([]byte("[]"))
 }
