@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"git.gay/h/homeswitch/config"
-	actor_model "git.gay/h/homeswitch/models/actor"
+	account_model "git.gay/h/homeswitch/models/account"
 	"git.gay/h/homeswitch/router/mastoapi/apicontext"
 	"git.gay/h/homeswitch/router/mastoapi/form"
 	"github.com/go-chi/chi/v5"
@@ -61,12 +61,12 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actor := &actor_model.Actor{
+	account := &account_model.Account{
 		Username: requestForm.Username,
 		Name:     &requestForm.Username,
 		Email:    requestForm.Email,
 	}
-	err = actor_model.CreateActor(actor, requestForm.Password)
+	err = account_model.CreateAccount(account, requestForm.Password)
 	if err != nil {
 		http.Error(w, "Error creating account", http.StatusInternalServerError)
 	}
@@ -76,8 +76,8 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func VerifyCredentialsHandler(w http.ResponseWriter, r *http.Request) {
-	actor := r.Context().Value(apicontext.UserContextKey).(*actor_model.Actor)
-	body, err := json.Marshal(actor.ToAccount(true))
+	account := r.Context().Value(apicontext.UserContextKey).(*account_model.Account)
+	body, err := json.Marshal(account.ToMastoAccount(true))
 	if err != nil {
 		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling response")
 		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
@@ -90,15 +90,15 @@ func VerifyCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetAccountHandler(w http.ResponseWriter, r *http.Request) {
 	accountId := chi.URLParam(r, "id")
-	actor, ok := actor_model.GetActorByID(accountId)
+	account, ok := account_model.GetAccountByID(accountId)
 	if !ok {
 		// TODO: error should be same as Mastodon
 		http.Error(w, "Record not found", http.StatusNotFound)
 		return
 	}
-	account := actor.ToAccount(false)
+	mastoAccount := account.ToMastoAccount(false)
 
-	body, err := json.Marshal(account)
+	body, err := json.Marshal(mastoAccount)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -111,15 +111,15 @@ func GetAccountHandler(w http.ResponseWriter, r *http.Request) {
 func LookupAccountHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	acct := r.Form.Get("acct")
-	actor, ok := actor_model.GetActorByUsername(acct)
+	account, ok := account_model.GetAccountByUsername(acct)
 	if !ok {
 		// TODO: error should be same as Mastodon
 		http.Error(w, "Record not found", http.StatusNotFound)
 		return
 	}
-	account := actor.ToAccount(false)
+	mastoAccount := account.ToMastoAccount(false)
 
-	body, err := json.Marshal(account)
+	body, err := json.Marshal(mastoAccount)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

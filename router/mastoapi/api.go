@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	actor_model "git.gay/h/homeswitch/models/actor"
+	account_model "git.gay/h/homeswitch/models/account"
 	app_model "git.gay/h/homeswitch/models/app"
 	token_model "git.gay/h/homeswitch/models/token"
 	"git.gay/h/homeswitch/router/mastoapi/accounts"
@@ -60,12 +60,12 @@ func AddAuthorizationContext(h http.Handler) http.Handler {
 		}
 		r = r.WithContext(context.WithValue(r.Context(), apicontext.AppContextKey, app))
 		if token.UserID != nil {
-			actor, ok := actor_model.GetActorByID(*token.UserID)
+			account, ok := account_model.GetAccountByID(*token.UserID)
 			if !ok {
 				h.ServeHTTP(w, r)
 				return
 			}
-			r = r.WithContext(context.WithValue(r.Context(), apicontext.UserContextKey, actor))
+			r = r.WithContext(context.WithValue(r.Context(), apicontext.UserContextKey, account))
 		}
 		h.ServeHTTP(w, r)
 	}
@@ -86,8 +86,8 @@ func RequireAppAuthorization(h http.Handler) http.Handler {
 
 func RequireUserAuthentication(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		actor, ok := r.Context().Value(apicontext.UserContextKey).(*actor_model.Actor)
-		if !ok || actor == nil {
+		account, ok := r.Context().Value(apicontext.UserContextKey).(*account_model.Account)
+		if !ok || account == nil {
 			log.Debug().Msg("Unauthorized")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

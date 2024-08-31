@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"git.gay/h/homeswitch/config"
-	"git.gay/h/homeswitch/models/actor"
+	account_model "git.gay/h/homeswitch/models/account"
 	"git.gay/h/homeswitch/version"
 	"github.com/rs/zerolog/log"
 )
@@ -32,7 +32,7 @@ type Instance struct {
 	ApprovalRequired     bool                  `json:"approval_required"`
 	InvitesEnabled       bool                  `json:"invites_enabled"`
 	Configuration        InstanceConfiguration `json:"configuration"`
-	ContactAccount       actor.Actor           `json:"contact_account"`
+	ContactAccount       account_model.Account `json:"contact_account"`
 	Rules                []InstanceRule        `json:"rules"`
 }
 
@@ -139,16 +139,16 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	instance.URLs.StreamingAPI = fmt.Sprintf("wss://%s", config.ServerName)
 
-	userCount, err := actor.GetLocalActorCount()
+	userCount, err := account_model.GetLocalAccountCount()
 	if err != nil {
-		log.Error().Err(err).Msg("Could not get local actor count")
+		log.Error().Err(err).Msg("Could not get local account count")
 		http.Error(w, "Error getting user count", http.StatusInternalServerError)
 		return
 	}
 	instance.Stats.UserCount = userCount
 	// TODO: status count, domain count
 
-	ContactAccount, ok := actor.GetActorByUsername(config.AdminUsername)
+	ContactAccount, ok := account_model.GetAccountByUsername(config.AdminUsername)
 	if !ok {
 		http.Error(w, "Error getting contact account", http.StatusInternalServerError)
 		return

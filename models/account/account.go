@@ -1,8 +1,11 @@
-package actor
+package account
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"regexp"
 
 	"git.gay/h/homeswitch/config"
 	"git.gay/h/homeswitch/db"
@@ -13,8 +16,9 @@ import (
 )
 
 var (
-	ErrActorNotFound = errors.New("actor not found")
-	EmptyRole        = map[string]interface{}{
+	AcctRegExp         = regexp.MustCompile(`(?i)@?([a-z0-9\-\_]+)@([a-z0-9\-.]+)`)
+	ErrAccountNotFound = errors.New("account not found")
+	EmptyRole          = map[string]interface{}{
 		"id":          "-99",
 		"name":        "",
 		"permissions": "0",
@@ -24,10 +28,10 @@ var (
 )
 
 func init() {
-	db.Engine.Sync(new(Actor))
+	db.Engine.Sync(new(Account))
 }
 
-type Actor struct {
+type Account struct {
 	ID              string           `json:"id" xorm:"'id' pk notnull unique"`
 	Username        string           `json:"username" xorm:"'username' varchar(25) notnull"`
 	Acct            string           `json:"acct" xorm:"'acct' varchar(255) notnull unique"`
@@ -50,7 +54,7 @@ type Actor struct {
 	FollowingCount  int64            `json:"following_count"`
 	StatusesCount   int64            `json:"statuses_count"`
 	Fields          []Field          `json:"fields"`
-	Settings        ActorSettings    `json:"-" xorm:"jsonb"`
+	Settings        AccountSettings  `json:"-" xorm:"jsonb"`
 }
 
 type Field struct {
@@ -59,11 +63,11 @@ type Field struct {
 	VerifiedAt *marshaltime.Time `json:"verified_at"`
 }
 
-func (a *Actor) TableName() string {
-	return "actor"
+func (a *Account) TableName() string {
+	return "account"
 }
 
-func (a *Actor) Webfinger() webfinger.Webfinger {
+func (a *Account) Webfinger() webfinger.Webfinger {
 	return webfinger.Webfinger{
 		Subject: fmt.Sprintf("acct:%s@%s", a.Username, config.ServerName),
 		Aliases: []string{
@@ -79,7 +83,7 @@ func (a *Actor) Webfinger() webfinger.Webfinger {
 	}
 }
 
-func (a *Actor) ActivityPub() map[string]interface{} {
+func (a *Account) ActivityPub() map[string]interface{} {
 	return map[string]interface{}{
 		"@context": []string{
 			"https://www.w3.org/ns/activitystreams",
@@ -100,13 +104,53 @@ func (a *Actor) ActivityPub() map[string]interface{} {
 	}
 }
 
-func GetActorByUsername(username string) (actor *Actor, ok bool) {
-	actor = &Actor{
-		Username: username,
+func lookupAccount(acct string) (account *Account, err error) {
+	// TODO: support host-meta (eg: https://besties.house/.well-known/host-meta)
+	submatches := AcctRegExp.FindStringSubmatch(acct)
+	instance := submatches[2]
+	if acct[0] == '@' {
+		acct = acct[1:]
 	}
-	exists, err := db.Engine.Get(actor)
+	webfingerResponse, err := webfinger.LookupResource(instance, fmt.Sprintf("acct:%s", acct))
 	if err != nil {
-		log.Err(err).Str("username", username).Msg("Error getting actor by username")
+		return
+	}
+	link, ok := webfingerResponse.GetLink("application/activity+json")
+	if !ok {
+		err = fmt.Errorf("No application/activity+json link")
+	}
+	accountResponse, err := http.Get(link.Href)
+	if err != nil {
+		return
+	}
+	defer accountResponse.Body.Close()
+	account = &Account{}
+	err = json.NewDecoder(accountResponse.Body).Decode(account)
+	if err != nil {
+		return
+	}
+	err = fmt.Errorf("Not finished implementing")
+	return
+}
+
+func GetAccountByUsername(username string) (account *Account, ok bool) {
+	account = &Account{}
+	isAcct := AcctRegExp.MatchString(username)
+	if isAcct {
+		var acct string
+		if username[0] == '@' {
+			acct = username[1:]
+		} else {
+			acct = username
+		}
+		account.Acct = acct
+		lookupAccount(acct)
+	} else {
+		account.Username = username
+	}
+	exists, err := db.Engine.Get(account)
+	if err != nil {
+		log.Err(err).Str("username", username).Msg("Error getting account by username")
 		return
 	}
 	if !exists {
@@ -116,13 +160,13 @@ func GetActorByUsername(username string) (actor *Actor, ok bool) {
 	return
 }
 
-func GetActorByID(id string) (actor *Actor, ok bool) {
-	actor = &Actor{
+func GetAccountByID(id string) (account *Account, ok bool) {
+	account = &Account{
 		ID: id,
 	}
-	exists, err := db.Engine.Get(actor)
+	exists, err := db.Engine.Get(account)
 	if err != nil {
-		log.Err(err).Str("id", id).Msg("Error getting actor by ID")
+		log.Err(err).Str("id", id).Msg("Error getting account by ID")
 		return
 	}
 	if !exists {
@@ -132,21 +176,21 @@ func GetActorByID(id string) (actor *Actor, ok bool) {
 	return
 }
 
-func ActorLogin(email string, password string) (actor *Actor, ok bool) {
-	actor = &Actor{
+func AccountLogin(email string, password string) (account *Account, ok bool) {
+	account = &Account{
 		Email: email,
 	}
-	exists, err := db.Engine.Get(actor)
+	exists, err := db.Engine.Get(account)
 	if err != nil {
-		log.Err(err).Str("email", email).Msg("Error getting actor by email")
+		log.Err(err).Str("email", email).Msg("Error getting account by email")
 		return
 	}
 	if !exists {
 		return
 	}
-	match, err := argon2id.ComparePasswordAndHash(password, actor.PasswordHash)
+	match, err := argon2id.ComparePasswordAndHash(password, account.PasswordHash)
 	if err != nil {
-		log.Err(err).Str("email", email).Str("username", actor.Username).Msg("Error comparing password and hash")
+		log.Err(err).Str("email", email).Str("username", account.Username).Msg("Error comparing password and hash")
 		return
 	}
 	if !match {
@@ -156,7 +200,7 @@ func ActorLogin(email string, password string) (actor *Actor, ok bool) {
 	return
 }
 
-func GetLocalActorCount() (count int64, err error) {
-	count, err = db.Engine.Count(new(Actor))
+func GetLocalAccountCount() (count int64, err error) {
+	count, err = db.Engine.Count(new(Account))
 	return
 }

@@ -1,4 +1,4 @@
-package actor
+package account
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func CreateActor(actor *Actor, password string) (err error) {
+func CreateAccount(account *Account, password string) (err error) {
 	id, err := db.RandomId()
 	if err != nil {
 		errors.Join(err, errors.New("generating random ID failed"))
@@ -28,17 +28,17 @@ func CreateActor(actor *Actor, password string) (err error) {
 		return
 	}
 
-	actor.ID = id
-	actor.Acct = actor.Username
-	actor.Created = marshaltime.Now()
-	actor.PrivateKey = string(privateKey)
-	actor.PublicKey = string(publicKey)
-	actor.PasswordHash = hash
-	actor.Fields = []Field{}
+	account.ID = id
+	account.Acct = account.Username
+	account.Created = marshaltime.Now()
+	account.PrivateKey = string(privateKey)
+	account.PublicKey = string(publicKey)
+	account.PasswordHash = hash
+	account.Fields = []Field{}
 
-	_, err = db.Engine.Insert(actor)
+	_, err = db.Engine.Insert(account)
 	if err != nil {
-		log.Error().Err(err).Str("username", actor.Username).Msg("Error inserting actor")
+		log.Error().Err(err).Str("username", account.Username).Msg("Error inserting account")
 		return
 	}
 	return

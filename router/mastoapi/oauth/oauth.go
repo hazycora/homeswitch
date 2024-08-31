@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"git.gay/h/homeswitch/crypto"
-	actor_model "git.gay/h/homeswitch/models/actor"
+	account_model "git.gay/h/homeswitch/models/account"
 	app_model "git.gay/h/homeswitch/models/app"
 	token_model "git.gay/h/homeswitch/models/token"
 	"git.gay/h/homeswitch/router/mastoapi/form"
@@ -152,10 +152,10 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 		ClientID: r.Form.Get("client_id"),
 	}
 	if userId != nil {
-		_, ok := actor_model.GetActorByID(*userId)
+		_, ok := account_model.GetAccountByID(*userId)
 		if !ok {
-			log.Debug().Str("user_id", *userId).Msg("Actor not found")
-			http.Error(w, "Actor not found", http.StatusBadRequest)
+			log.Debug().Str("user_id", *userId).Msg("Account not found")
+			http.Error(w, "Account not found", http.StatusBadRequest)
 		}
 		token.UserID = userId
 	}

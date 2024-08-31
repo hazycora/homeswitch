@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	actor_model "git.gay/h/homeswitch/models/actor"
+	account_model "git.gay/h/homeswitch/models/account"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 )
@@ -18,11 +18,11 @@ func InboxHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	username := chi.URLParam(r, "username")
-	actor, ok := actor_model.GetActorByUsername(username)
+	account, ok := account_model.GetAccountByUsername(username)
 	if !ok {
-		http.Error(w, "Actor not found", http.StatusNotFound)
+		http.Error(w, "Account not found", http.StatusNotFound)
 		return
 	}
-	log.Debug().Str("body", string(body)).Str("for_actor", actor.Username).Msg("Inbox event, got body")
+	log.Debug().Str("body", string(body)).Str("for_account", account.Username).Msg("Inbox event, got body")
 	// TODO: actually handle inbox events
 }

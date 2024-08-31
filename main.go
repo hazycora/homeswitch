@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"git.gay/h/homeswitch/common/logger"
-	actor_model "git.gay/h/homeswitch/models/actor"
+	account_model "git.gay/h/homeswitch/models/account"
 	"git.gay/h/homeswitch/router"
 
 	"github.com/rs/zerolog/log"
@@ -55,12 +55,12 @@ func main() {
 					if password == "" {
 						log.Error().Msg("password unspecified")
 					}
-					actor := &actor_model.Actor{
+					account := &account_model.Account{
 						Username: username,
 						Name:     &username,
 						Email:    email,
 					}
-					err = actor_model.CreateActor(actor, ctx.String("password"))
+					err = account_model.CreateAccount(account, ctx.String("password"))
 					return
 				},
 			},

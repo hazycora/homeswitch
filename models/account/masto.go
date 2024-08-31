@@ -1,4 +1,4 @@
-package actor
+package account
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 	"git.gay/h/homeswitch/utils/marshaltime"
 )
 
-type Account struct {
-	Actor
+type MastoAccount struct {
+	Account
 	URL             string            `json:"url"`
 	URI             string            `json:"uri"`
 	Group           bool              `json:"group"`
@@ -34,12 +34,12 @@ type AccountSource struct {
 	Indexable           bool           `json:"indexable"`
 }
 
-func (a *Actor) ToAccount(withSource bool) (account Account) {
+func (a *Account) ToMastoAccount(withSource bool) (account MastoAccount) {
 	url := fmt.Sprintf("%s/@%s", config.ServerURL, a.Acct)
 	avatarUrl := fmt.Sprintf("%s/static/missing_avatar.png", config.ServerURL)
 	headerUrl := fmt.Sprintf("%s/static/missing_header.png", config.ServerURL)
-	account = Account{
-		Actor:           *a,
+	account = MastoAccount{
+		Account:         *a,
 		URL:             url,
 		URI:             url,
 		Group:           false,

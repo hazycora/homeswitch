@@ -6,7 +6,7 @@ import (
 
 	"git.gay/h/homeswitch/activitypub"
 	"git.gay/h/homeswitch/common/logger"
-	actor_model "git.gay/h/homeswitch/models/actor"
+	account_model "git.gay/h/homeswitch/models/account"
 	app_model "git.gay/h/homeswitch/models/app"
 	token_model "git.gay/h/homeswitch/models/token"
 	"git.gay/h/homeswitch/router/mastoapi"
@@ -64,7 +64,7 @@ func GetRouter() http.Handler {
 		r.ParseForm()
 		email := r.Form.Get("user[email]")
 		password := r.Form.Get("user[password]")
-		user, ok := actor_model.ActorLogin(email, password)
+		user, ok := account_model.AccountLogin(email, password)
 		if !ok {
 			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 			return

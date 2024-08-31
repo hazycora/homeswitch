@@ -1,4 +1,4 @@
-package actor
+package account
 
 import (
 	"encoding/json"
@@ -6,12 +6,12 @@ import (
 	"git.gay/h/homeswitch/models/status"
 )
 
-type ActorSettings struct {
+type AccountSettings struct {
 	DefaultPrivacy   status.Privacy `json:"default_privacy"`
 	DefaultSensitive bool           `json:"default_sensitive"`
 	DefaultLanguage  *string        `json:"default_language"`
 }
 
-func (as *ActorSettings) MarshalJSON() ([]byte, error) {
+func (as *AccountSettings) MarshalJSON() ([]byte, error) {
 	return json.Marshal(as)
 }

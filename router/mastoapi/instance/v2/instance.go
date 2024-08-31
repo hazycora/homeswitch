@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"git.gay/h/homeswitch/config"
-	"git.gay/h/homeswitch/models/actor"
+	account_model "git.gay/h/homeswitch/models/account"
 	"git.gay/h/homeswitch/version"
 )
 
@@ -82,8 +82,8 @@ type InstanceRegistrations struct {
 }
 
 type InstanceContact struct {
-	Email   string      `json:"email"`
-	Account actor.Actor `json:"account"`
+	Email   string                `json:"email"`
+	Account account_model.Account `json:"account"`
 }
 
 type InstanceRule struct {
@@ -165,7 +165,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO: proper usage data
 
-	ContactAccount, ok := actor.GetActorByUsername(config.AdminUsername)
+	ContactAccount, ok := account_model.GetAccountByUsername(config.AdminUsername)
 	if !ok {
 		http.Error(w, "Error getting contact account", http.StatusInternalServerError)
 		return
