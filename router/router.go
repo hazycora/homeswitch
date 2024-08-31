@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"git.gay/h/homeswitch/activitypub"
+	"git.gay/h/homeswitch/common/logger"
 	actor_model "git.gay/h/homeswitch/models/actor"
 	app_model "git.gay/h/homeswitch/models/app"
 	token_model "git.gay/h/homeswitch/models/token"
@@ -15,13 +16,19 @@ import (
 	"git.gay/h/homeswitch/router/tmpl"
 	webfingerHandler "git.gay/h/homeswitch/webfinger/handler"
 
+	"github.com/chi-middleware/proxy"
 	"github.com/go-chi/chi/v5"
-	chi_middleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/zerolog/log"
 )
+
+func init() {
+	log.Logger = logger.Logger
+}
 
 func GetRouter() http.Handler {
 	r := chi.NewRouter()
-	r.Use(chi_middleware.Logger)
+	r.Use(proxy.ForwardedHeaders())
+	r.Use(logger.Middleware)
 	r.Use(func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Server", "homeswitch (https://git.gay/h/homeswitch)")

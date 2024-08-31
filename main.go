@@ -4,17 +4,16 @@ import (
 	"net/http"
 	"os"
 
+	"git.gay/h/homeswitch/common/logger"
 	actor_model "git.gay/h/homeswitch/models/actor"
 	"git.gay/h/homeswitch/router"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
 func init() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	log.Logger = logger.Logger
 }
 
 func main() {
