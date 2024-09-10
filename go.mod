@@ -22,7 +22,6 @@ require (
 )
 
 require (
-	github.com/Lavalier/zchi v1.0.0
 	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/chi-middleware/proxy v1.1.1
