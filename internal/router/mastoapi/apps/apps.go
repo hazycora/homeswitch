@@ -1,63 +1,52 @@
 package apps
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
 	app_model "git.gay/h/homeswitch/internal/models/app"
 	"git.gay/h/homeswitch/internal/router/mastoapi/apicontext"
 	"git.gay/h/homeswitch/internal/router/mastoapi/form"
-	"git.gay/h/homeswitch/internal/utils"
+	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
 
 type CreateAppForm struct {
-	ClientName  string   `json:"client_name" validate:"required"`
-	RedirectURI string   `json:"redirect_uris" validate:"required"`
-	Scopes      []string `json:"scopes"`
-	Website     string   `json:"website"`
+	ClientName  string `form:"client_name" json:"client_name" validate:"required"`
+	RedirectURI string `form:"redirect_uris" json:"redirect_uris" validate:"required"`
+	Scopes      string `form:"scopes" json:"scopes"`
+	Website     string `form:"website" json:"website"`
 }
 
-func CreateAppHandler(w http.ResponseWriter, r *http.Request) {
-	utils.ParseForm(r)
-	requestForm := CreateAppForm{
-		ClientName:  r.Form.Get("client_name"),
-		RedirectURI: r.Form.Get("redirect_uris"),
-		Scopes:      strings.Split(r.Form.Get("scopes"), " "),
-		Website:     r.Form.Get("website"),
-	}
+func CreateAppHandler(c *gin.Context) {
+	var requestForm CreateAppForm
+	c.Bind(&requestForm)
+
 	err := form.ValidateForm(requestForm)
 	if err != nil {
+		path := c.Request.URL.Path
 		formError, ok := err.(form.FormError)
 		if !ok {
-			log.Error().Err(err).Str("path", r.URL.Path).Msg("Error validating form")
-			http.Error(w, "Error validating form", http.StatusInternalServerError)
+			log.Error().Err(err).Str("path", path).Msg("Error validating form")
+			http.Error(c.Writer, "Error validating form", http.StatusInternalServerError)
 			return
 		}
-		log.Debug().Err(formError).Str("path", r.URL.Path).Msg("Received invalid form")
-		body, err := json.Marshal(formError)
-		if err != nil {
-			log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling form error")
-			http.Error(w, "Error marshalling form error", http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		w.Write(body)
+		log.Debug().Err(formError).Str("path", path).Msg("Received invalid form")
+		c.JSON(http.StatusUnprocessableEntity, formError)
 		return
 	}
 
 	app := &app_model.App{
 		Name:        requestForm.ClientName,
 		RedirectURI: requestForm.RedirectURI,
-		Scopes:      requestForm.Scopes,
+		Scopes:      strings.Split(requestForm.Scopes, " "),
 		Website:     requestForm.Website,
 	}
 
 	err = app_model.CreateApp(app)
 	if err != nil {
-		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error creating app")
-		http.Error(w, "Error creating app", http.StatusInternalServerError)
+		log.Error().Err(err).Str("path", c.Request.URL.Path).Msg("Error creating app")
+		http.Error(c.Writer, "Error creating app", http.StatusInternalServerError)
 		return
 	}
 
@@ -70,26 +59,19 @@ func CreateAppHandler(w http.ResponseWriter, r *http.Request) {
 		"client_secret": app.ClientSecret,
 	}
 
-	body, err := json.Marshal(response)
-	if err != nil {
-		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling response")
-		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
-		return
-	}
-	w.Write(body)
+	c.JSON(http.StatusOK, response)
 }
 
-func VerifyCredentialsHandler(w http.ResponseWriter, r *http.Request) {
-	app := r.Context().Value(apicontext.AppContextKey).(*app_model.App)
+func VerifyCredentialsHandler(c *gin.Context) {
+	appAny, ok := c.Get(apicontext.AppContextKey)
+	if !ok || appAny == nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	app := appAny.(*app_model.App)
 	response := map[string]interface{}{
 		"name":    app.Name,
 		"website": app.Website,
 	}
-	body, err := json.Marshal(response)
-	if err != nil {
-		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling response")
-		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
-		return
-	}
-	w.Write(body)
+	c.JSON(http.StatusOK, response)
 }

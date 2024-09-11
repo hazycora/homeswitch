@@ -1,63 +1,43 @@
 package accounts
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"git.gay/h/homeswitch/internal/config"
 	account_model "git.gay/h/homeswitch/internal/models/account"
 	"git.gay/h/homeswitch/internal/router/mastoapi/apicontext"
 	"git.gay/h/homeswitch/internal/router/mastoapi/form"
-	"github.com/go-chi/chi/v5"
-	"github.com/rs/zerolog/log"
+	"github.com/gin-gonic/gin"
 )
 
 type RegisterAccountForm struct {
-	Username  string `json:"username" validate:"required,username,max=30"`
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,min=8"`
-	Agreement bool   `json:"agreement" validate:"required"`
-	Locale    string `json:"locale" validate:"required"`
-	Reason    string `json:"reason"`
+	Username  string `json:"username" form:"username" validate:"required,username,max=30"`
+	Email     string `json:"email" form:"email" validate:"required,email"`
+	Password  string `json:"password" form:"password" validate:"required,min=8"`
+	Agreement bool   `json:"agreement" form:"agreement" validate:"required"`
+	Locale    string `json:"locale" form:"locale" validate:"required"`
+	Reason    string `json:"reason" form:"reason"`
 }
 
-func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
+func RegisterAccountHandler(c *gin.Context) {
 	if !config.RegistrationsEnabled {
-		http.Error(w, "Registrations not enabled.", http.StatusForbidden)
+		http.Error(c.Writer, "Registrations not enabled.", http.StatusForbidden)
 	}
 
-	body, err := io.ReadAll(r.Body)
-	defer r.Body.Close()
-	if err != nil {
-		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error reading body")
-		http.Error(w, "Error reading body", http.StatusInternalServerError)
-		return
-	}
 	var requestForm RegisterAccountForm
-	err = json.Unmarshal(body, &requestForm)
+	err := c.Bind(&requestForm)
 	if err != nil {
-		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error unmarshalling JSON")
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		http.Error(c.Writer, "Could not bind form", http.StatusInternalServerError)
 		return
 	}
 	err = form.ValidateForm(requestForm)
 	if err != nil {
 		formError, ok := err.(form.FormError)
 		if !ok {
-			log.Error().Err(err).Str("path", r.URL.Path).Msg("Error validating form")
-			http.Error(w, "Error validating form", http.StatusInternalServerError)
+			http.Error(c.Writer, "Error validating form", http.StatusInternalServerError)
 			return
 		}
-		log.Debug().Err(formError).Str("path", r.URL.Path).Msg("Received invalid form")
-		body, err := json.Marshal(formError)
-		if err != nil {
-			log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling form error")
-			http.Error(w, "Error marshalling form error", http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		w.Write(body)
+		c.JSON(http.StatusUnprocessableEntity, formError)
 		return
 	}
 
@@ -68,75 +48,51 @@ func RegisterAccountHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = account_model.CreateAccount(account, requestForm.Password)
 	if err != nil {
-		http.Error(w, "Error creating account", http.StatusInternalServerError)
+		http.Error(c.Writer, "Error creating account", http.StatusInternalServerError)
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(""))
+	c.Writer.WriteString("")
 }
 
-func VerifyCredentialsHandler(w http.ResponseWriter, r *http.Request) {
-	account := r.Context().Value(apicontext.UserContextKey).(*account_model.Account)
-	body, err := json.Marshal(account.ToMastoAccount(true))
-	if err != nil {
-		log.Error().Err(err).Str("path", r.URL.Path).Msg("Error marshalling response")
-		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
+func VerifyCredentialsHandler(c *gin.Context) {
+	account, ok := c.Get(apicontext.UserContextKey)
+	if !ok || account == nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	w.Header().Set("content-type", "application/json")
-	w.Write(body)
-	log.Debug().Any("body", string(body)).Msg("verify_credentials, sob")
+	c.JSON(http.StatusOK, account.(*account_model.Account).ToMastoAccount(true))
 }
 
-func GetAccountHandler(w http.ResponseWriter, r *http.Request) {
-	accountId := chi.URLParam(r, "id")
+func GetAccountHandler(c *gin.Context) {
+	accountId := c.Param("id")
 	account, ok := account_model.GetAccountByID(accountId)
 	if !ok {
 		// TODO: error should be same as Mastodon
-		http.Error(w, "Record not found", http.StatusNotFound)
+		http.Error(c.Writer, "Record not found", http.StatusNotFound)
 		return
 	}
 	mastoAccount := account.ToMastoAccount(false)
-
-	body, err := json.Marshal(mastoAccount)
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	w.Write(body)
+	c.JSON(http.StatusOK, mastoAccount)
 }
 
-func LookupAccountHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	acct := r.Form.Get("acct")
+func LookupAccountHandler(c *gin.Context) {
+	acct := c.PostForm("acct")
 	account, ok := account_model.GetAccountByUsername(acct)
 	if !ok {
 		// TODO: error should be same as Mastodon
-		http.Error(w, "Record not found", http.StatusNotFound)
+		http.Error(c.Writer, "Record not found", http.StatusNotFound)
 		return
 	}
 	mastoAccount := account.ToMastoAccount(false)
-
-	body, err := json.Marshal(mastoAccount)
-	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	w.Write(body)
+	c.JSON(http.StatusOK, mastoAccount)
 }
 
 // TODO: implement
-func FeaturedTagsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "application/json")
-	w.Write([]byte("[]"))
+func FeaturedTagsHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, []string{})
 }
 
 // TODO: implement
-func StatusesHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "application/json")
-	w.Write([]byte("[]"))
+func StatusesHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, []string{})
 }

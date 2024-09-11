@@ -1,13 +1,13 @@
 package instance_v1
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"git.gay/h/homeswitch/internal/config"
 	account_model "git.gay/h/homeswitch/internal/models/account"
 	"git.gay/h/homeswitch/internal/version"
+	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 )
 
@@ -121,7 +121,7 @@ func init() {
 	configuration.Reactions.MaxReactions = 4
 }
 
-func Handler(w http.ResponseWriter, r *http.Request) {
+func Handler(c *gin.Context) {
 	instance := Instance{
 		URI:                  config.ServerName,
 		Title:                config.ServerTitle,
@@ -142,7 +142,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	userCount, err := account_model.GetLocalAccountCount()
 	if err != nil {
 		log.Error().Err(err).Msg("Could not get local account count")
-		http.Error(w, "Error getting user count", http.StatusInternalServerError)
+		http.Error(c.Writer, "Error getting user count", http.StatusInternalServerError)
 		return
 	}
 	instance.Stats.UserCount = userCount
@@ -150,15 +150,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	ContactAccount, ok := account_model.GetAccountByUsername(config.AdminUsername)
 	if !ok {
-		http.Error(w, "Error getting contact account", http.StatusInternalServerError)
+		http.Error(c.Writer, "Error getting contact account", http.StatusInternalServerError)
 		return
 	}
 	instance.ContactAccount = *ContactAccount
-	body, err := json.Marshal(instance)
-	if err != nil {
-		http.Error(w, "Error marshalling instance", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
+
+	c.JSON(http.StatusOK, instance)
 }

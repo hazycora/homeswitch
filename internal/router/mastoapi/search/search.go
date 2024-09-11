@@ -5,12 +5,15 @@ import (
 	"strings"
 
 	account_model "git.gay/h/homeswitch/internal/models/account"
+	"github.com/gin-gonic/gin"
 )
 
-func SearchHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.FormValue("q")
+func SearchHandler(c *gin.Context) {
+	query := c.Query("q")
 	if query == "" {
-		http.Error(w, "param is missing or the value is empty", http.StatusBadRequest)
+		c.Status(http.StatusBadRequest)
+		c.Writer.WriteString("param is missing or the value is empty")
+		return
 	}
 
 	query = strings.TrimSpace(query)
@@ -18,4 +21,6 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	if account_model.AcctRegExp.MatchString(query) {
 		account_model.GetAccountByUsername(query)
 	}
+
+	// TODO: implement
 }

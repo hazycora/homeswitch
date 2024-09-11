@@ -1,13 +1,12 @@
 package nodeinfo
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"git.gay/h/homeswitch/internal/config"
 	"git.gay/h/homeswitch/internal/version"
-	"github.com/rs/zerolog/log"
+	"github.com/gin-gonic/gin"
 )
 
 type Link struct {
@@ -15,20 +14,11 @@ type Link struct {
 	Href string `json:"href"`
 }
 
-var WellKnownLinks []byte
-
-func init() {
-	var links = []Link{
-		{
-			Rel:  "http://nodeinfo.diaspora.software/ns/schema/2.0",
-			Href: fmt.Sprintf("%s/nodeinfo/2.0", config.ServerURL),
-		},
-	}
-	var err error
-	WellKnownLinks, err = json.Marshal(links)
-	if err != nil {
-		log.Panic().Err(err).Msg("Failed to marshall .well-known/nodeinfo links")
-	}
+var links = []Link{
+	{
+		Rel:  "http://nodeinfo.diaspora.software/ns/schema/2.0",
+		Href: fmt.Sprintf("%s/nodeinfo/2.0", config.ServerURL),
+	},
 }
 
 type NodeInfo struct {
@@ -63,11 +53,11 @@ type Metadata struct {
 	NodeDescription string `json:"nodeDescription"`
 }
 
-func WellKnownHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write(WellKnownLinks)
+func WellKnownHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, links)
 }
 
-func Handler(w http.ResponseWriter, r *http.Request) {
+func Handler(c *gin.Context) {
 	nodeInfo := NodeInfo{
 		Version: "2.0",
 		Software: Software{
@@ -87,11 +77,5 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			NodeDescription: config.ServerShortDescription,
 		},
 	}
-	body, err := json.Marshal(nodeInfo)
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to marshal NodeInfo")
-		http.Error(w, "Failed to marshal NodeInfo", http.StatusInternalServerError)
-		return
-	}
-	w.Write(body)
+	c.JSON(http.StatusOK, nodeInfo)
 }

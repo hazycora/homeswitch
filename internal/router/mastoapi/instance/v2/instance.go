@@ -1,13 +1,13 @@
 package instance_v2
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"git.gay/h/homeswitch/internal/config"
 	account_model "git.gay/h/homeswitch/internal/models/account"
 	"git.gay/h/homeswitch/internal/version"
+	"github.com/gin-gonic/gin"
 )
 
 type Instance struct {
@@ -143,7 +143,7 @@ func init() {
 	configuration.Reactions.MaxReactions = 4
 }
 
-func Handler(w http.ResponseWriter, r *http.Request) {
+func Handler(c *gin.Context) {
 	instance := Instance{
 		Domain:      config.ServerName,
 		Title:       config.ServerTitle,
@@ -167,16 +167,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	ContactAccount, ok := account_model.GetAccountByUsername(config.AdminUsername)
 	if !ok {
-		http.Error(w, "Error getting contact account", http.StatusInternalServerError)
+		http.Error(c.Writer, "Error getting contact account", http.StatusInternalServerError)
 		return
 	}
 	instance.Contact.Account = *ContactAccount
 
-	body, err := json.Marshal(instance)
-	if err != nil {
-		http.Error(w, "Error marshalling instance", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
+	c.JSON(http.StatusOK, instance)
 }

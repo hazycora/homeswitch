@@ -1,20 +1,22 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
 
-func AllowCORS(h http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		w.Header().Add("Access-Control-Allow-Headers", "accept, content-type, x-requested-with, authorization")
-		w.Header().Add("Access-Control-Allow-Methods", "POST, PUT, DELETE, GET, PATCH, OPTIONS")
-		w.Header().Add("Access-Control-Expose-Headers", "Link, X-RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, X-Request-Id")
+	"github.com/gin-gonic/gin"
+)
 
-		if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+func AllowCORS(c *gin.Context) {
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Access-Control-Allow-Headers", "accept, content-type, x-requested-with, authorization")
+	c.Header("Access-Control-Allow-Methods", "POST, PUT, DELETE, GET, PATCH, OPTIONS")
+	c.Header("Access-Control-Expose-Headers", "Link, X-RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, X-Request-Id")
 
-		h.ServeHTTP(w, r)
+	if c.Request.Method == http.MethodOptions && c.GetHeader("Access-Control-Request-Method") != "" {
+		c.Status(http.StatusNoContent)
+		c.Writer.WriteString("")
+		return
 	}
-	return http.HandlerFunc(fn)
+
+	c.Next()
 }

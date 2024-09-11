@@ -1,16 +1,12 @@
 package instance
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func CustomEmojiHandler(w http.ResponseWriter, r *http.Request) {
+func CustomEmojiHandler(c *gin.Context) {
 	emoji := []interface{}{}
-	body, err := json.Marshal(emoji)
-	if err != nil {
-		http.Error(w, "Error marshalling response", http.StatusInternalServerError)
-		return
-	}
-	w.Write(body)
+	c.JSON(http.StatusOK, emoji)
 }
