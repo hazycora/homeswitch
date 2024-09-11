@@ -151,7 +151,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		Rules:       []InstanceRule{},
 		Version:     version.FullVersion,
 		Thumbnail: InstanceThumbnail{
-			URL: fmt.Sprintf("https://%s/static/banner.png", config.ServerName),
+			URL: fmt.Sprintf("https://%s/system/static/banner.png", config.ServerName),
 		},
 		Registrations: InstanceRegistrations{
 			Enabled:          config.RegistrationsEnabled,

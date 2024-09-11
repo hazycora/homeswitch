@@ -1,6 +1,7 @@
 package router
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -90,6 +91,17 @@ func GetRouter() http.Handler {
 		})
 		w.Write([]byte("Signed in!"))
 	})
-	r.Mount("/", GetStaticRouter())
+	r.Mount("/system/static", http.StripPrefix("/system/static/", http.FileServer(http.Dir("static"))))
 	return r
+}
+
+func Listen(addr string) (err error) {
+	router := GetRouter()
+	log.Info().Msgf("Listening on http://%s", addr)
+	err = http.ListenAndServe(addr, router)
+	if !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal().Err(err).Msg("ListenAndServe error")
+		return
+	}
+	return
 }

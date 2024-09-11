@@ -36,8 +36,8 @@ type AccountSource struct {
 
 func (a *Account) ToMastoAccount(withSource bool) (account MastoAccount) {
 	url := fmt.Sprintf("%s/@%s", config.ServerURL, a.Acct)
-	avatarUrl := fmt.Sprintf("%s/static/missing_avatar.png", config.ServerURL)
-	headerUrl := fmt.Sprintf("%s/static/missing_header.png", config.ServerURL)
+	avatarUrl := fmt.Sprintf("%s/system/static/missing_avatar.png", config.ServerURL)
+	headerUrl := fmt.Sprintf("%s/system/static/missing_header.png", config.ServerURL)
 	account = MastoAccount{
 		Account:         *a,
 		URL:             url,

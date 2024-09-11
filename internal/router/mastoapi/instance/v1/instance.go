@@ -129,7 +129,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		Description:          config.ServerDescription,
 		Rules:                []InstanceRule{},
 		Version:              version.FullVersion,
-		Thumbnail:            fmt.Sprintf("https://%s/static/banner.png", config.ServerName),
+		Thumbnail:            fmt.Sprintf("https://%s/system/static/banner.png", config.ServerName),
 		Languages:            []string{"en"},
 		RegistrationsEnabled: config.RegistrationsEnabled,
 		ApprovalRequired:     config.ApprovalRequired,
