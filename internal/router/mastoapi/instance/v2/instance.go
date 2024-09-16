@@ -16,12 +16,19 @@ type Instance struct {
 	Version       string                `json:"version"`
 	SourceURL     string                `json:"source_url"`
 	Description   string                `json:"description"`
+	Usage         InstanceUsage         `json:"usage"`
 	Thumbnail     InstanceThumbnail     `json:"thumbnail"`
 	Languages     []string              `json:"languages"`
 	Configuration InstanceConfiguration `json:"configuration"`
 	Registrations InstanceRegistrations `json:"registrations"`
 	Contact       InstanceContact       `json:"contact"`
 	Rules         []InstanceRule        `json:"rules"`
+}
+
+type InstanceUsage struct {
+	Users struct {
+		ActiveMonth int64 `json:"active_month"`
+	} `json:"users"`
 }
 
 type InstanceThumbnail struct {
