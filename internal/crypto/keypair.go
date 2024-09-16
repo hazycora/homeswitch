@@ -14,14 +14,21 @@ func GenerateKeyPair() (private []byte, public []byte, err error) {
 	}
 	publicKey := &privateKey.PublicKey
 
-	var privateKeyBytes []byte = x509.MarshalPKCS1PrivateKey(privateKey)
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return
+	}
 	privateKeyBlock := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
+		Type:  "PRIVATE KEY",
 		Bytes: privateKeyBytes,
 	}
 	pemPrivateKey := pem.EncodeToMemory(privateKeyBlock)
 
-	var publicKeyBytes []byte = x509.MarshalPKCS1PublicKey(publicKey)
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return
+	}
+
 	publicKeyBlock := &pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: publicKeyBytes,
