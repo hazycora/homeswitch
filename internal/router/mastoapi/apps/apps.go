@@ -63,12 +63,11 @@ func CreateAppHandler(c *gin.Context) {
 }
 
 func VerifyCredentialsHandler(c *gin.Context) {
-	appAny, ok := c.Get(apicontext.AppContextKey)
-	if !ok || appAny == nil {
+	app, ok := apicontext.GetApp(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	app := appAny.(*app_model.App)
 	response := map[string]interface{}{
 		"name":    app.Name,
 		"website": app.Website,

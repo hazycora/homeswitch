@@ -55,12 +55,12 @@ func RegisterAccountHandler(c *gin.Context) {
 }
 
 func VerifyCredentialsHandler(c *gin.Context) {
-	account, ok := c.Get(apicontext.UserContextKey)
-	if !ok || account == nil {
+	account, ok := apicontext.GetAccount(c)
+	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	c.JSON(http.StatusOK, account.(*account_model.Account).ToMastoAccount(true))
+	c.JSON(http.StatusOK, account.ToMastoAccount(true))
 }
 
 func GetAccountHandler(c *gin.Context) {

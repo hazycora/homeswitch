@@ -59,14 +59,14 @@ func AddAuthorizationContext(c *gin.Context) {
 			c.Next()
 			return
 		}
-		c.Set(apicontext.UserContextKey, account)
+		c.Set(apicontext.AccountContextKey, account)
 	}
 	c.Next()
 }
 
 func RequireAppAuthorization(c *gin.Context) {
-	app, ok := c.Get(apicontext.AppContextKey)
-	if !ok || app == nil {
+	_, ok := apicontext.GetApp(c)
+	if !ok {
 		http.Error(c.Writer, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -74,8 +74,8 @@ func RequireAppAuthorization(c *gin.Context) {
 }
 
 func RequireUserAuthentication(c *gin.Context) {
-	account, ok := c.Get(apicontext.UserContextKey)
-	if !ok || account == nil {
+	_, ok := apicontext.GetAccount(c)
+	if !ok {
 		http.Error(c.Writer, "Unauthorized", http.StatusUnauthorized)
 		return
 	}

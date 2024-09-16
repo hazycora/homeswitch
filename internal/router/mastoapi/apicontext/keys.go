@@ -1,6 +1,6 @@
 package apicontext
 
 const (
-	AppContextKey  = "app"
-	UserContextKey = "user"
+	AppContextKey     = "app"
+	AccountContextKey = "account"
 )
