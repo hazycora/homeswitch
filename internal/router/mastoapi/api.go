@@ -99,9 +99,9 @@ func Route(r *gin.RouterGroup) {
 		v1.GET("/timelines/home", timelines.HomeHandler)
 
 		v1.GET("/accounts/lookup", accounts.LookupAccountHandler)
-		v1.GET("/accounts/{id}", accounts.GetAccountHandler)
-		v1.GET("/accounts/{id}/featured_tags", accounts.GetAccountHandler)
-		v1.GET("/accounts/{id}/statuses", accounts.StatusesHandler)
+		v1.GET("/accounts/:id", accounts.GetAccountHandler)
+		v1.GET("/accounts/:id/featured_tags", accounts.GetAccountHandler)
+		v1.GET("/accounts/:id/statuses", accounts.StatusesHandler)
 
 		appAuth := v1.Group("")
 		{

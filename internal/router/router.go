@@ -37,8 +37,8 @@ func GetRouter() http.Handler {
 	r.GET("/nodeinfo/2.0", nodeinfo.Handler)
 	r.GET("/nodeinfo/2.0.json", nodeinfo.Handler)
 
-	r.GET("/@{username}", activitypub.ActorHandler)
-	r.POST("/@{username}/inbox", activitypub.InboxHandler)
+	r.GET("/@:username", activitypub.ActorHandler)
+	r.POST("/@:username/inbox", activitypub.InboxHandler)
 
 	apiRoute := r.Group("/api")
 	mastoapi.Route(apiRoute)
