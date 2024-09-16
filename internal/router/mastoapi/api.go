@@ -91,8 +91,11 @@ func Route(r *gin.RouterGroup) {
 
 		v1.POST("/apps", apps.CreateAppHandler)
 		v1.GET("/custom_emojis", instance.CustomEmojiHandler)
+		v1.GET("/trends/tags", instance.TrendingTagsHandler)
+		v1.GET("/trends/statuses", instance.TrendingStatusesHandler)
 		v1.GET("/notifications", notifications.Handler)
 
+		v1.GET("/timelines/public", timelines.PublicHandler)
 		v1.GET("/timelines/home", timelines.HomeHandler)
 
 		v1.GET("/accounts/lookup", accounts.LookupAccountHandler)
